@@ -1,0 +1,73 @@
+name: Maven Build and Test with Email Notification
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Build with Maven
+      run: mvn clean package
+
+    - name: Run Tests
+      run: mvn test
+
+  success_notify:
+    if: success()
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Send Success Notification
+      uses: dawidd6/action-send-mail@v3
+      with:
+        connection_url: smtp://smtp.gmail.com:587
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
+        subject: "✅ OnTrack Maven Build Successful!"
+        to: yashagg00001@gmail.com    # Change to your email
+        from: "OnTrack CI <your-email@example.com>"
+        html_body: |
+          <h2>🎉 Build Success!</h2>
+          <p>The build for the OnTrack project completed <strong>successfully</strong>.</p>
+          <p>Repository: <strong>SIT_707_9.1_224087102</strong></p>
+          <p>Branch: <strong>main</strong></p>
+          <p>Commit: <strong>${{ github.sha }}</strong></p>
+          <p>You can check the build logs <a href="${{ github.server_url }}/${{ github.repository }}/actions">here</a>.</p>
+
+  failure_notify:
+    if: failure()
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Send Failure Notification
+      uses: dawidd6/action-send-mail@v3
+      with:
+        connection_url: smtp://smtp.gmail.com:587
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
+        subject: "❌ OnTrack Maven Build Failed!"
+        to: yashagg00001@gmail.com    # Change to your email
+        from: "OnTrack CI <your-email@example.com>"
+        html_body: |
+          <h2>🚨 Build Failure!</h2>
+          <p>The build for the OnTrack project <strong>failed</strong>. Please check the logs for more details.</p>
+          <p>Repository: <strong>SIT_707_9.1_224087102</strong></p>
+          <p>Branch: <strong>main</strong></p>
+          <p>Commit: <strong>${{ github.sha }}</strong></p>
+          <p>You can check the build logs <a href="${{ github.server_url }}/${{ github.repository }}/actions">here</a>.</p>
